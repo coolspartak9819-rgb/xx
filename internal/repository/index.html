@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KidMoney - Ежедневный трекер</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Nunito', sans-serif; }
+        body { background: #FFF9E6; min-height: 100vh; }
+        
+        .header-bg {
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF8E53 100%);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #FFD93D 0%, #FFA751 100%);
+            box-shadow: 0 10px 0 #E8943A, 0 15px 30px rgba(255,167,81,0.3);
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .task-card:active {
+            transform: scale(0.98);
+        }
+
+        .task-card.completed {
+            background: linear-gradient(135deg, #A8E6CF 0%, #88D8B0 100%);
+            box-shadow: 0 4px 12px rgba(136,216,176,0.3);
+        }
+
+        .checkbox {
+            width: 44px;
+            height: 44px;
+            border: 3px solid #E0E0E0;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .task-card.completed .checkbox {
+            background: white;
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .emoji {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 800;
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .task-amount {
+            font-weight: 700;
+            font-size: 14px;
+            color: #FF6B9D;
+        }
+
+        .task-card.completed .task-title,
+        .task-card.completed .task-amount {
+            color: #2E7D32;
+        }
+
+        .daily-total {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 24px;
+            padding: 24px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+            margin-top: 20px;
+        }
+
+        .daily-total-amount {
+            font-size: 48px;
+            font-weight: 900;
+            margin-top: 8px;
+        }
+
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .pop-in {
+            animation: pop-in 0.3s ease-out;
+        }
+
+        @keyframes check-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .check-bounce {
+            animation: check-bounce 0.4s ease-out;
+        }
+
+        .nav-item {
+            transition: transform 0.2s;
+        }
+
+        .nav-item:active {
+            transform: scale(0.9);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .empty-state-emoji {
+            font-size: 64px;
+            margin-bottom: 16px;
+        }
+
+        .btn-create {
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF8E53 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 16px;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+            transition: all 0.1s;
+        }
+
+        .btn-create:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body class="pb-24">
+    <!-- Шапка -->
+    <div class="header-bg px-6 pt-12 pb-8 rounded-b-[32px] relative overflow-hidden">
+        <div class="absolute top-4 right-4 opacity-20 text-6xl"></div>
+        <div class="absolute bottom-4 left-4 opacity-20 text-5xl">⭐</div>
+        
+        <div class="flex justify-between items-center mb-6 relative z-10">
+            <div>
+                <p class="text-white text-opacity-90 text-sm font-semibold">Привет, <span id="userName">...</span>! 👋</p>
+                <h1 class="text-white text-3xl font-black mt-1">KidMoney</h1>
+            </div>
+            <button onclick="logout()" class="bg-white bg-opacity-20 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-bold">
+                Выйти
+            </button>
+        </div>
+
+        <div class="balance-card rounded-3xl p-6 relative z-10">
+            <p class="text-white text-opacity-90 text-sm font-bold mb-1">ТВОЙ БАЛАНС</p>
+            <div class="flex items-center gap-2">
+                <span class="text-4xl">💰</span>
+                <span class="text-white text-5xl font-black"><span id="balance">0</span> ₽</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ежедневный трекер -->
+    <div class="px-6 pt-6">
+        <div class="mb-4">
+            <h2 class="text-2xl font-black text-gray-800">📅 Ежедневный трекер</h2>
+            <p class="text-gray-600 font-semibold" id="currentDate">14 июля, вторник</p>
+        </div>
+
+        <div id="tasksList">
+            <div class="empty-state">
+                <div class="empty-state-emoji">⏳</div>
+                <p class="text-gray-500 font-bold text-lg">Загрузка заданий...</p>
+            </div>
+        </div>
+
+        <!-- Заработано сегодня -->
+        <div class="daily-total">
+            <p class="text-white text-opacity-90 font-bold">💰 Заработано сегодня</p>
+            <div class="daily-total-amount"><span id="dailyTotal">0</span> ₽</div>
+        </div>
+    </div>
+
+    <!-- Нижнее меню -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t-4 border-gray-100 px-6 py-3 flex justify-around items-center">
+        <button class="nav-item flex flex-col items-center">
+            <div class="bg-pink-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">📋</div>
+            <span class="text-xs font-bold text-pink-500 mt-1">Задания</span>
+        </button>
+        <a href="wallet.html" class="nav-item flex flex-col items-center">
+            <div class="bg-yellow-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">💰</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Кошелёк</span>
+        </a>
+        <a href="settings.html" class="nav-item flex flex-col items-center">
+            <div class="bg-blue-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">⚙️</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Настройки</span>
+        </a>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('user_id');
+        const username = localStorage.getItem('username');
+        const role = localStorage.getItem('role');
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('userName').textContent = username || '...';
+
+        // Установить текущую дату
+        const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+        const days = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+        const now = new Date();
+        document.getElementById('currentDate').textContent = `${now.getDate()} ${months[now.getMonth()]}, ${days[now.getDay()]}`;
+
+        // Эмодзи для заданий
+        const taskEmojis = {
+            'Заправила постель': '🛏️',
+            'Убрала после еды': '🍽️',
+            'Убрала рабочее место': '💻',
+            'Почистила зубы': '',
+            'Прочитала 20 страниц': '📚',
+            'Написала пересказ': '✍️',
+            'Пропылесосила': '🧹',
+            'Помогла без напоминания': '💝',
+            'Выполнила обещание': '🤝',
+            'Была вежлива': '😊'
+        };
+
+        let completedTasks = new Set();
+        let dailyTotal = 0;
+        let tasksData = [];
+
+        async function loadTasks() {
+            try {
+                const response = await fetch(API_URL + '/tasks', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (response.status === 401) {
+                    alert('❌ Сессия истекла. Войдите заново.');
+                    logout();
+                    return;
+                }
+
+                tasksData = await response.json();
+                const list = document.getElementById('tasksList');
+
+                if (!Array.isArray(tasksData) || tasksData.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-emoji">📝</div>
+                            <p class="text-gray-500 font-bold text-lg mb-4">Заданий пока нет</p>
+                            ${role === 'parent' ? 
+                                '<button onclick="createDefaultTasks()" class="btn-create">➕ Создать задания</button>' :
+                                '<p class="text-gray-400">Попроси родителя добавить задания</p>'
+                            }
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = tasksData.map((task, index) => {
+                    const emoji = taskEmojis[task.title] || '⭐';
+                    return `
+                        <div class="task-card pop-in" style="animation-delay: ${index * 0.05}s" onclick="toggleTask(${task.id}, ${task.amount}, this)">
+                            <div class="checkbox" id="checkbox-${task.id}"></div>
+                            <div class="emoji">${emoji}</div>
+                            <div class="task-info">
+                                <div class="task-title">${task.title}</div>
+                                <div class="task-amount">+${task.amount} ₽</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки заданий:', error);
+                document.getElementById('tasksList').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-emoji">😢</div>
+                        <p class="text-gray-500 font-bold text-lg">Ошибка загрузки</p>
+                        <p class="text-gray-400 text-sm mt-2">Убедитесь, что сервер запущен</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function createDefaultTasks() {
+            const defaultTasks = [
+                { title: 'Заправила постель', amount: 50 },
+                { title: 'Убрала после еды', amount: 30 },
+                { title: 'Убрала рабочее место', amount: 40 },
+                { title: 'Почистила зубы', amount: 20 },
+                { title: 'Прочитала 20 страниц', amount: 50 },
+                { title: 'Написала пересказ', amount: 70 },
+                { title: 'Пропылесосила', amount: 120 },
+                { title: 'Помогла без напоминания', amount: 80 },
+                { title: 'Выполнила обещание', amount: 100 },
+                { title: 'Была вежлива', amount: 30 }
+            ];
+
+            try {
+                for (const task of defaultTasks) {
+                    await fetch(API_URL + '/tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            title: task.title,
+                            amount: task.amount,
+                            type: 'reward',
+                            is_active: true
+                        })
+                    });
+                }
+                alert('✅ Задания созданы!');
+                loadTasks();
+            } catch (error) {
+                alert('❌ Ошибка создания заданий');
+                console.error(error);
+            }
+        }
+
+        async function toggleTask(taskId, amount, element) {
+            if (completedTasks.has(taskId)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/tasks/complete/${taskId}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ user_id: parseInt(userId), task_id: taskId })
+                });
+
+                if (response.ok) {
+                    completedTasks.add(taskId);
+                    element.classList.add('completed');
+                    
+                    const checkbox = document.getElementById(`checkbox-${taskId}`);
+                    checkbox.textContent = '✓';
+                    checkbox.classList.add('check-bounce');
+                    
+                    dailyTotal += amount;
+                    document.getElementById('dailyTotal').textContent = dailyTotal;
+                    
+                    await loadBalance();
+                } else {
+                    const data = await response.json();
+                    alert('❌ ' + (data.error || 'Ошибка'));
+                }
+            } catch (error) {
+                alert('❌ Ошибка подключения');
+                console.error(error);
+            }
+        }
+
+        async function loadBalance() {
+            try {
+                const response = await fetch(API_URL + '/balance?user_id=' + userId, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('balance').textContent = data.balance;
+                }
+            } catch (error) {
+                console.error('Ошибка баланса:', error);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        loadTasks();
+        loadBalance();
+    </script>
+</body>
+</html>

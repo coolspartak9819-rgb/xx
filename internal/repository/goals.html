@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KidMoney - Мои цели</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Nunito', sans-serif; }
+        body { background: #FFF9E6; min-height: 100vh; }
+        
+        .header-bg {
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF8E53 100%);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #FFD93D 0%, #FFA751 100%);
+            box-shadow: 0 10px 0 #E8943A, 0 15px 30px rgba(255,167,81,0.3);
+        }
+
+        .goal-card {
+            background: white;
+            border-radius: 24px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .goal-emoji {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .progress-bar-bg {
+            background-color: #E0E0E0;
+            border-radius: 99px;
+            height: 16px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #A8E6CF 0%, #4CAF50 100%);
+            border-radius: 99px;
+            transition: width 1s ease-out;
+        }
+
+        .nav-item {
+            transition: transform 0.2s;
+        }
+
+        .nav-item:active {
+            transform: scale(0.9);
+        }
+
+        .modal-overlay {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .input-playful {
+            border: 3px solid #E0E0E0;
+            border-radius: 16px;
+            padding: 12px 16px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .input-playful:focus {
+            outline: none;
+            border-color: #FF6B9D;
+        }
+
+        .btn-3d {
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+            transition: all 0.1s;
+        }
+        
+        .btn-3d:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.15);
+        }
+
+        .fab-add {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body class="pb-24">
+    <!-- Шапка -->
+    <div class="header-bg px-6 pt-12 pb-8 rounded-b-[32px] relative overflow-hidden">
+        <div class="absolute top-4 right-4 opacity-20 text-6xl">🎯</div>
+        <div class="absolute bottom-4 left-4 opacity-20 text-5xl">⭐</div>
+        
+        <div class="flex justify-between items-center mb-6 relative z-10">
+            <div>
+                <p class="text-white text-opacity-90 text-sm font-semibold">Привет, <span id="userName">...</span>! 👋</p>
+                <h1 class="text-white text-3xl font-black mt-1">KidMoney</h1>
+            </div>
+            <button onclick="logout()" class="bg-white bg-opacity-20 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-bold">
+                Выйти
+            </button>
+        </div>
+
+        <div class="balance-card rounded-3xl p-6 relative z-10">
+            <p class="text-white text-opacity-90 text-sm font-bold mb-1">ТВОЙ БАЛАНС</p>
+            <div class="flex items-center gap-2">
+                <span class="text-4xl">💰</span>
+                <span class="text-white text-5xl font-black"><span id="balance">0</span> ₽</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Цели -->
+    <div class="px-6 pt-6">
+        <div class="text-center mb-6">
+            <h2 class="text-3xl font-black text-gray-800">🎯 Мои цели</h2>
+            <p class="font-bold text-gray-500">Коплю на мечты!</p>
+        </div>
+        <div id="goalsList">
+            <p class="text-center text-gray-500 py-8">Загрузка целей...</p>
+        </div>
+    </div>
+
+    <!-- Кнопка "Добавить цель" -->
+    <div class="fab-add">
+        <button onclick="showAddGoalModal()" class="btn-3d bg-pink-500 text-white w-16 h-16 rounded-2xl text-4xl font-black shadow-lg">+</button>
+    </div>
+
+    <!-- Модальное окно добавления цели -->
+    <div id="addGoalModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-sm p-6 rounded-3xl">
+            <h3 class="text-2xl font-black text-gray-800 mb-4">✨ Новая цель</h3>
+            <div class="space-y-4">
+                <input type="text" id="goalDescription" placeholder="На что копим?" class="input-playful w-full">
+                <input type="number" id="goalAmount" placeholder="Сколько нужно накопить?" class="input-playful w-full">
+                <input type="text" id="goalEmoji" placeholder="Выбери эмодзи (например, 🎮)" class="input-playful w-full">
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeAddGoalModal()" class="w-full bg-gray-200 font-bold py-3 rounded-xl btn-3d">Отмена</button>
+                    <button onclick="createGoal()" class="w-full bg-pink-500 text-white font-bold py-3 rounded-xl btn-3d">Создать!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно пополнения -->
+    <div id="contributeModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-sm p-6 rounded-3xl">
+            <h3 class="text-2xl font-black text-gray-800 mb-4">💸 Пополнить цель</h3>
+            <div class="space-y-4">
+                <input type="number" id="contributeAmount" placeholder="Сумма пополнения" class="input-playful w-full">
+                <input type="hidden" id="contributeGoalId">
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closeContributeModal()" class="w-full bg-gray-200 font-bold py-3 rounded-xl btn-3d">Отмена</button>
+                    <button onclick="contributeToGoal()" class="w-full bg-green-500 text-white font-bold py-3 rounded-xl btn-3d">Пополнить!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Нижнее меню -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t-4 border-gray-100 px-6 py-3 flex justify-around items-center">
+        <a href="index.html" class="nav-item flex flex-col items-center">
+            <div class="bg-pink-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">📋</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Задания</span>
+        </a>
+        <a href="wallet.html" class="nav-item flex flex-col items-center">
+            <div class="bg-yellow-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">💰</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Кошелёк</span>
+        </a>
+        <a href="settings.html" class="nav-item flex flex-col items-center">
+            <div class="bg-blue-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">⚙️</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Настройки</span>
+        </a>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('user_id');
+        const username = localStorage.getItem('username');
+        const role = localStorage.getItem('role');
+
+        if (!token) { window.location.href = 'login.html'; }
+
+        document.getElementById('userName').textContent = username || '...';
+        if (role !== 'parent') {
+            document.querySelector('.fab-add').style.display = 'none';
+        }
+
+        // --- Dummy Data & Functions (replace with real API calls) ---
+        let goalsData = [
+            { id: 1, emoji: '💄', title: 'Косметика', current_amount: 1500, target_amount: 3000 },
+            { id: 2, emoji: '🎮', title: 'Игра', current_amount: 400, target_amount: 4500 },
+            { id: 3, emoji: '🧸', title: 'Игрушка', current_amount: 800, target_amount: 1000 },
+        ];
+
+        function renderGoals() {
+            const list = document.getElementById('goalsList');
+            if (goalsData.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-8">Пока нет ни одной цели. Время добавить первую!</p>';
+                return;
+            }
+            list.innerHTML = goalsData.map(goal => {
+                const percentage = Math.round((goal.current_amount / goal.target_amount) * 100);
+                return `
+                    <div class="goal-card">
+                        <div class="goal-emoji">${goal.emoji}</div>
+                        <h3 class="text-xl font-black text-gray-800">${goal.title}</h3>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: ${percentage}%;"></div>
+                        </div>
+                        <p class="text-sm font-bold text-gray-600">Накоплено: ${goal.current_amount} ₽ из ${goal.target_amount} ₽ (${percentage}%)</p>
+                        <div class="flex gap-2 mt-4">
+                            <button onclick="showContributeModal(${goal.id})" class="flex-1 bg-green-500 text-white font-bold py-2 rounded-xl btn-3d">Пополнить</button>
+                            ${role === 'parent' ? `<button onclick="deleteGoal(${goal.id})" class="flex-1 bg-gray-200 font-bold py-2 rounded-xl btn-3d">Удалить</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- Modals ---
+        function showAddGoalModal() { document.getElementById('addGoalModal').classList.remove('hidden'); }
+        function closeAddGoalModal() { document.getElementById('addGoalModal').classList.add('hidden'); }
+        function showContributeModal(goalId) {
+            document.getElementById('contributeGoalId').value = goalId;
+            document.getElementById('contributeModal').classList.remove('hidden');
+        }
+        function closeContributeModal() { document.getElementById('contributeModal').classList.add('hidden'); }
+
+        // --- API Logic (Simulated) ---
+        async function createGoal() {
+            alert('Функционал создания цели в разработке (POST /api/goals)');
+            closeAddGoalModal();
+        }
+        async function contributeToGoal() {
+            alert('Функционал пополнения в разработке (POST /api/goals/contribute)');
+            closeContributeModal();
+        }
+        async function deleteGoal(goalId) {
+            if (confirm('Удалить эту цель?')) {
+                alert(`Функционал удаления в разработке (DELETE /api/goals/${goalId})`);
+            }
+        }
+
+        async function loadBalance() {
+            try {
+                const response = await fetch(`${API_URL}/balance`, { headers: { 'Authorization': 'Bearer ' + token } });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('balance').textContent = data.balance;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки баланса:', error);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // Initial Load
+        loadBalance();
+        renderGoals(); // Using dummy data for now
+    </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KidMoney - Кошелёк</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Nunito', sans-serif; }
+        body { background: #FFF9E6; min-height: 100vh; }
+        
+        .header-bg {
+            background: linear-gradient(135deg, #FF6B9D 0%, #FF8E53 100%);
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #FFD93D 0%, #FFA751 100%);
+            box-shadow: 0 10px 0 #E8943A, 0 15px 30px rgba(255,167,81,0.3);
+        }
+
+        .transaction-card {
+            background: white;
+            border-radius: 20px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .transaction-amount {
+            margin-left: auto;
+            font-weight: 800;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .income { color: #2E7D32; }
+        .expense { color: #D32F2F; }
+
+        .emoji {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .nav-item {
+            transition: transform 0.2s;
+        }
+
+        .nav-item:active {
+            transform: scale(0.9);
+        }
+
+        .modal-overlay {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .input-playful {
+            border: 3px solid #E0E0E0;
+            border-radius: 16px;
+            padding: 12px 16px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .input-playful:focus {
+            outline: none;
+            border-color: #FF6B9D;
+        }
+
+        .btn-3d {
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+            transition: all 0.1s;
+        }
+        
+        .btn-3d:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.15);
+        }
+
+        .fab-purchase {
+            position: fixed;
+            bottom: 100px;
+            right: 24px;
+            z-index: 40;
+        }
+    </style>
+</head>
+<body class="pb-24">
+    <!-- Шапка -->
+    <div class="header-bg px-6 pt-12 pb-8 rounded-b-[32px] relative overflow-hidden">
+        <div class="absolute top-4 right-4 opacity-20 text-6xl">💰</div>
+        <div class="absolute bottom-4 left-4 opacity-20 text-5xl">⭐</div>
+        
+        <div class="flex justify-between items-center mb-6 relative z-10">
+            <div>
+                <p class="text-white text-opacity-90 text-sm font-semibold">Привет, <span id="userName">...</span>! 👋</p>
+                <h1 class="text-white text-3xl font-black mt-1">KidMoney</h1>
+            </div>
+            <button onclick="logout()" class="bg-white bg-opacity-20 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-bold">
+                Выйти
+            </button>
+        </div>
+
+        <div class="balance-card rounded-3xl p-6 relative z-10">
+            <p class="text-white text-opacity-90 text-sm font-bold mb-1">ТВОЙ БАЛАНС</p>
+            <div class="flex items-center gap-2">
+                <span class="text-4xl">💰</span>
+                <span class="text-white text-5xl font-black"><span id="balance">0</span> ₽</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- История операций -->
+    <div class="px-6 pt-6">
+        <h2 class="text-2xl font-black text-gray-800 mb-4">📜 История операций</h2>
+        <div id="transactionsList">
+            <p class="text-center text-gray-500 py-8">Загрузка истории...</p>
+        </div>
+    </div>
+
+    <!-- Кнопка "Списать на покупку" -->
+    <div class="fab-purchase">
+        <button onclick="showPurchaseModal()" class="btn-3d bg-pink-500 text-white w-16 h-16 rounded-2xl text-4xl font-black shadow-lg">🛒</button>
+    </div>
+
+    <!-- Модальное окно покупки -->
+    <div id="purchaseModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-sm p-6 rounded-3xl">
+            <h3 class="text-2xl font-black text-gray-800 mb-4">🛍️ Новая покупка</h3>
+            <div class="space-y-4">
+                <input type="text" id="purchaseDescription" placeholder="Что ты купила?" class="input-playful w-full">
+                <input type="number" id="purchaseAmount" placeholder="Сколько стоило?" class="input-playful w-full">
+                <div class="flex gap-2 pt-2">
+                    <button onclick="closePurchaseModal()" class="w-full bg-gray-200 font-bold py-3 rounded-xl btn-3d">Отмена</button>
+                    <button onclick="makePurchase()" class="w-full bg-pink-500 text-white font-bold py-3 rounded-xl btn-3d">Купить!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Нижнее меню -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t-4 border-gray-100 px-6 py-3 flex justify-around items-center">
+        <a href="index.html" class="nav-item flex flex-col items-center">
+            <div class="bg-pink-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">📋</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Задания</span>
+        </a>
+        <button class="nav-item flex flex-col items-center">
+            <div class="bg-yellow-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">💰</div>
+            <span class="text-xs font-bold text-yellow-600 mt-1">Кошелёк</span>
+        </button>
+        <a href="settings.html" class="nav-item flex flex-col items-center">
+            <div class="bg-blue-100 w-12 h-12 rounded-2xl flex items-center justify-center text-2xl">⚙️</div>
+            <span class="text-xs font-bold text-gray-500 mt-1">Настройки</span>
+        </a>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api';
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('user_id');
+        const username = localStorage.getItem('username');
+
+        if (!token) { window.location.href = 'login.html'; }
+
+        document.getElementById('userName').textContent = username || '...';
+
+        async function loadTransactions() {
+            try {
+                const response = await fetch(`${API_URL}/transactions`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const transactions = await response.json();
+                const list = document.getElementById('transactionsList');
+
+                if (!Array.isArray(transactions) || transactions.length === 0) {
+                    list.innerHTML = '<p class="text-center text-gray-500 py-8">Пока нет ни одной операции.</p>';
+                    return;
+                }
+
+                list.innerHTML = transactions.map(tx => {
+                    const isIncome = tx.type === 'income';
+                    const emoji = isIncome ? '💰' : '🛒';
+                    const amountClass = isIncome ? 'income' : 'expense';
+                    const amountSign = isIncome ? '+' : '-';
+                    const date = new Date(tx.created_at).toLocaleDateString('ru-RU');
+
+                    return `
+                        <div class="transaction-card">
+                            <div class="emoji">${emoji}</div>
+                            <div>
+                                <p class="font-bold text-gray-800">${tx.description}</p>
+                                <p class="text-sm text-gray-500">${date}</p>
+                            </div>
+                            <div class="transaction-amount ${amountClass}">${amountSign}${tx.amount} ₽</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки транзакций:', error);
+                document.getElementById('transactionsList').innerHTML = '<p class="text-center text-red-500 py-8">Не удалось загрузить историю.</p>';
+            }
+        }
+
+        function showPurchaseModal() { document.getElementById('purchaseModal').classList.remove('hidden'); }
+        function closePurchaseModal() { document.getElementById('purchaseModal').classList.add('hidden'); }
+
+        async function makePurchase() {
+            const description = document.getElementById('purchaseDescription').value;
+            const amount = parseFloat(document.getElementById('purchaseAmount').value);
+
+            if (!description || isNaN(amount) || amount <= 0) {
+                alert('Пожалуйста, заполни все поля правильно!');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL + '/purchase', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ amount, description })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Покупка совершена!');
+                    closePurchaseModal();
+                    loadBalance();
+                    loadTransactions();
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            } catch (error) {
+                alert('Ошибка подключения');
+            }
+        }
+
+        async function loadBalance() {
+            try {
+                const response = await fetch(`${API_URL}/balance`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('balance').textContent = data.balance;
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки баланса:', error);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        loadBalance();
+        loadTransactions();
+    </script>
+</body>
+</html>
